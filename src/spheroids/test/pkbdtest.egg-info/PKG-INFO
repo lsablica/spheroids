@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: pkbdtest
+Version: 0.1
+Requires-Dist: pybind11
+Requires-Dist: numpy

@@ -3,9 +3,39 @@
 #include <armadillo>
 #include <cmath>
 #include <cstring> 
-#include "converter.hpp"
 
 namespace py = pybind11;
+
+
+arma::mat pyarray_to_arma_mat(const py::array_t<double> &arr) {
+    py::buffer_info buf = arr.request();
+    if (buf.ndim != 2) {
+        throw std::runtime_error("Expected a 2D numpy array for 'data'");
+    }
+    arma::mat M((double*)buf.ptr, buf.shape[0], buf.shape[1], false, false);
+    return M;
+}
+
+arma::vec pyarray_to_arma_vec(const py::array_t<double> &arr) {
+    py::buffer_info buf = arr.request();
+    if (buf.ndim == 1) {
+        arma::vec v((double*)buf.ptr, (size_t)buf.shape[0], false, false);
+        return v;
+    } else if (buf.ndim == 2) {
+        size_t length = (size_t)(buf.shape[0] * buf.shape[1]);
+        arma::vec v((double*)buf.ptr, length, false, false);
+        return v;
+    } else {
+        throw std::runtime_error("Expected a 1D or 2D single-column/row numpy array for vector");
+    }
+}
+
+py::array_t<double> arma_vec_to_pyarray(const arma::vec &v) {
+    py::array_t<double> result(v.n_elem);
+    py::buffer_info buf = result.request();
+    std::memcpy(buf.ptr, v.memptr(), v.n_elem * sizeof(double));
+    return result;
+}
 
 double hybridnewton(double c1, double c2, double c3, double tol, int maxiter) {
   double x,a,b;

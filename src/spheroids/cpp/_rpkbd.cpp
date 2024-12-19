@@ -1,91 +1,56 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include <pybind11/eigen.h>
-#include <Eigen/Dense>
-#include <unsupported/Eigen/Polynomials>  
-#include <random>
+#include <armadillo>
 #include <cmath>
+#include <cstring>
+#include "converter.hpp"
 
 namespace py = pybind11;
-using namespace Eigen;
 
-MatrixXd rPKBD_ACG(int n, double rho, const Ref<const VectorXd>& mu) {
-  double lambda = 2 * rho / (1 + rho * rho);
-  double norm = mu.squaredNorm();
-  int p = mu.size();
-  
-  // Initialize random number generators
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::normal_distribution<> normal(0, 1);
-  std::uniform_real_distribution<> uniform(0, 1);
-  
-  // Create output matrix
-  MatrixXd A(n, p);
-  
-  // Handle special cases
-  if (lambda == 0 || norm == 0) {
-    for (int i = 0; i < n; i++) {
-      VectorXd v(p);
-      for (int j = 0; j < p; j++) {
-        v(j) = normal(gen);
-      }
-      A.row(i) = v.normalized();
-    }
-    return A;
+py::array_t<double> rPKBD_ACG(int n, double rho, const py::array_t<double> &mu_arr){
+  arma::vec mu = pyarray_to_arma_vec(mu_arr);
+
+  double lambda = 2*rho/(1+rho*rho);
+  double norm = as_scalar(sum(arma::pow(mu,2)));
+  int p = mu.n_elem;
+  arma::mat A(n, p);
+  if(lambda == 0 || norm == 0){/*uniform*/
+    A.randn();
+    A = arma::normalise(A, 2, 1);
+    return arma_mat_to_pyarray(A);
   }
-  
-  // Normalize mu
-  VectorXd mu_normalized = mu / std::sqrt(norm);
-  
-  // Calculate parameters for envelope
-  double pp = static_cast<double>(p);
-  VectorXd coe(4);
-  coe << -pp*pp*lambda*lambda, 
-         2*pp*(pp-2)*lambda*lambda, 
-         4*pp-lambda*lambda*(pp-2)*(pp-2), 
-         -4*(pp-1);
-  
-  // Find roots using Eigen's PolynomialSolver
-  PolynomialSolver<double, 3> solver(coe);
-  VectorXcd roots = solver.roots();
-  VectorXd real_roots = roots.real();
-  std::sort(real_roots.data(), real_roots.data() + real_roots.size());
-  double b = real_roots(1);  // Take second root when sorted
-  double minuslogM = std::log((1 + std::sqrt(1 - lambda * lambda / b)) / 2);
-  double b2 = -1 + std::sqrt(1 / (1 - b));
-  double b1 = b / (1 - b);
-  // Generate samples using rejection sampling
+  mu = mu/std::sqrt(norm);
   int count = 0;
   int Nt = 0;
-  while (count < n) {
-    VectorXd candidate(p);
-    for (int j = 0; j < p; j++) {
-      candidate(j) = normal(gen);
-    }
-    
-    double mutz = candidate.dot(mu_normalized);
-    double norm_candidate = std::sqrt(candidate.squaredNorm() + b1 * mutz * mutz);
-    double mutx = mutz * (1 + b2) / norm_candidate;
-    
-    double PKBD = -std::log(1 - lambda * mutx);
-    double mACG = std::log(1 - b * mutx * mutx);
-    double unif = uniform(gen);
-    double ratio = 0.5 * p * (PKBD + mACG + minuslogM);
-    
-    if (std::log(unif) < ratio) {
-      candidate = (candidate + b2 * mutz * mu_normalized) / norm_candidate;
-      A.row(count) = candidate;
-      count++;
-    }
-    
-    Nt++;
-    if (Nt % 1000000 == 0) {
-      throw std::runtime_error("Maximum iterations reached in sampling");
-    }
-  }
+  double unif, mACG, PKBD, mutz, ratio, mutx;
+  arma::vec candidate;
   
-  return A;
+  double pp = (double)p;
+  arma::vec coe = { -4*(pp-1) , 4*pp-lambda*lambda*(pp-2)*(pp-2), 2*pp*(pp-2)*lambda*lambda, -pp*pp*lambda*lambda};
+  arma::vec RO = arma::sort(arma::real(arma::roots(coe)));
+  double b = RO(1);
+  
+  double minuslogM = std::log((1+sqrt(1-lambda*lambda/b))/2);
+  double b2 = -1 + std::sqrt(1/(1-b));
+  double b1 = b/(1-b);  
+  
+  while(count<n){
+    candidate = arma::randn<arma::vec>(p);
+    mutz = arma::dot(mu, candidate) ;
+    norm = sqrt(arma::dot(candidate,candidate) + b1*mutz*mutz);
+    mutx = mutz*(1+b2)/norm ;  
+    PKBD = -std::log(1-lambda*mutx);
+    mACG =  std::log(1-b*mutx*mutx);
+    unif = arma::randu<double>();
+    ratio = 0.5*p*(PKBD + mACG + minuslogM);
+    if(log(unif)<ratio){
+      candidate = (candidate + b2*mutz*mu)/norm;
+      A.row(count) = arma::trans(candidate);
+      count += 1;
+    }
+    Nt += 1;
+  }
+  return arma_mat_to_pyarray(A);
 }
 
 PYBIND11_MODULE(_rpkbd, m) {
