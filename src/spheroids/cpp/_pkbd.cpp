@@ -41,7 +41,6 @@ py::tuple M_step_PKBD(const py::array_t<double> &data_arr, const py::array_t<dou
   arma::mat data = pyarray_to_arma_mat(data_arr);
   arma::vec weights = pyarray_to_arma_vec(weights_arr);
   arma::vec mu_vec = pyarray_to_arma_vec(mu_vec_arr);
-
   double alpha = arma::mean(weights);
   
   arma::vec crossmat = data*mu_vec;
@@ -49,10 +48,10 @@ py::tuple M_step_PKBD(const py::array_t<double> &data_arr, const py::array_t<dou
   arma::vec scaled_weight = weights/wscale;
   arma::vec mu = data.t() * scaled_weight; 
   double mu_norm = arma::vecnorm(mu);
-  mu_vec = mu/mu_norm;
+  arma::vec mu_vec2 = mu/mu_norm;
   double sums_scaled_weight = sum(scaled_weight);
   rho = hybridnewton(d*sums_scaled_weight, 2*n*alpha, d*mu_norm, tol, maxiter); 
-  return py::make_tuple(arma_vec_to_pyarray(mu_vec), rho);
+  return py::make_tuple(arma_vec_to_pyarray(mu_vec2), rho);
 } 
 
 
@@ -60,6 +59,8 @@ py::array_t<double> logLik_PKBD(const py::array_t<double> &data_arr, const py::a
   
   arma::mat data = pyarray_to_arma_mat(data_arr);
   arma::vec mu_vec = pyarray_to_arma_vec(mu_vec_arr);
+  std::cout << "data: " << data << std::endl;
+  std::cout << "mu_vec: " << mu_vec << std::endl;
   double d = data.n_cols;
   arma::vec result = log(1-rho*rho) - d*arma::log(1 + rho*rho -2*rho*data*mu_vec)/2;
   return arma_vec_to_pyarray(result); 

@@ -1,7 +1,0 @@
-_pkbd.cpp
-setup.py
-pkbdtest.egg-info/PKG-INFO
-pkbdtest.egg-info/SOURCES.txt
-pkbdtest.egg-info/dependency_links.txt
-pkbdtest.egg-info/requires.txt
-pkbdtest.egg-info/top_level.txt

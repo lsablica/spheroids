@@ -3,38 +3,67 @@ import _pkbd
 import _rpkbd
 import _scauchy
 
-# Test _pkbd
-data = np.random.rand(100, 5)
-weights = np.random.rand(100)
-mu_vec = np.random.rand(5)
+print("Successfully imported functions!")
+
+# Create some test data
+n, d = 10, 3
+np.random.seed(42)
+X = np.random.randn(n, d)
+# Normalize to unit vectors
+X = X / np.linalg.norm(X, axis=1)[:, np.newaxis]
+#print(X)
+# Test PKBD
+weights = np.ones(n) / n
+mu = np.array([1.0, 0.0, 0.0])
 rho = 0.5
-n, d = data.shape
+print(X)
+print(mu)
 
-# M_step_PKBD test
-new_mu_vec, new_rho = _pkbd.M_step_PKBD(data, weights, mu_vec, rho, n, d)
-print("M_step_PKBD:", new_mu_vec, new_rho)
+print("\nTesting PKBD functions:")
+try:
+    new_mu, new_rho = _pkbd.M_step_PKBD(X, weights, mu, rho, n, d)
+    print("M_step_PKBD works!")
+    print("new_mu:", new_mu)
+    print("new_rho:", new_rho)
+except Exception as e:
+    print("Error in M_step_PKBD:", e)
 
-ll = _pkbd.logLik_PKBD(data, new_mu_vec, new_rho)
-print("logLik_PKBD shape:", ll.shape)
+try:
+    ll = _pkbd.logLik_PKBD(X, mu, rho)
+    print("logLik_PKBD works!")
+    print("Log-likelihoods:", ll[:3])  # First three values
+except Exception as e:
+    print("Error in logLik_PKBD:", e)
 
-# Test _rpkbd
-samples = _rpkbd.rPKBD_ACG(10, 0.5, np.random.rand(5))
-print("rPKBD_ACG samples shape:", samples.shape)
+print("\nTesting Spherical Cauchy functions:")
+try:
+    new_mu, new_rho = _scauchy.M_step_sCauchy(X, weights, n, d)
+    print("M_step_sCauchy works!")
+    print("new_mu:", new_mu)
+    print("new_rho:", new_rho)
+except Exception as e:
+    print("Error in M_step_sCauchy:", e)
+    
+try:
+    ll = _scauchy.logLik_sCauchy(X, mu, rho)
+    print("logLik_sCauchy works!")
+    print("Log-likelihoods:", ll[:3])  # First three values
+except Exception as e:
+    print("Error in logLik_PKBD:", e)    
 
-# Test _scauchy
-data_sc = np.random.randn(100, 5)
-weights_sc = np.random.rand(100)
-mu_sc = np.random.rand(5)
-rho_sc = 0.5
+print("\nTesting random sampling:")
+try:
+    samples_pkbd = _rpkbd.rPKBD_ACG(5, rho, mu)
+    print("rPKBD_ACG works!")
+    print("First sample:", samples_pkbd[0])
+except Exception as e:
+    print("Error in rPKBD_ACG:", e)
 
-# rspcauchy test
-sc_samples = _scauchy.rspcauchy(10, rho_sc, mu_sc)
-print("rspcauchy samples shape:", sc_samples.shape)
+try:
+    samples_cauchy = _scauchy.rspcauchy(5, rho, mu)
+    print("rspcauchy works!")
+    print("First sample:", samples_cauchy[0])
+except Exception as e:
+    print("Error in rspcauchy:", e)
 
-# M_step_sCauchy test
-mu_new_sc, rho_new_sc = _scauchy.M_step_sCauchy(data_sc, weights_sc, 100, 5)
-print("M_step_sCauchy:", mu_new_sc, rho_new_sc)
-
-ll_sc = _scauchy.logLik_sCauchy(data_sc, mu_new_sc, rho_new_sc)
-print("logLik_sCauchy shape:", ll_sc.shape)
 

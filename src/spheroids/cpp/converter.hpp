@@ -26,12 +26,11 @@ inline arma::vec pyarray_to_arma_vec(const py::array_t<double> &arr) {
 // Convert a Python array to an arma::mat
 inline arma::mat pyarray_to_arma_mat(const py::array_t<double> &arr) {
     py::buffer_info buf = arr.request();
-    if (buf.ndim != 2) {
-        throw std::runtime_error("Expected a 2D array for a matrix.");
-    }
-    arma::mat M((double*)buf.ptr, buf.shape[0], buf.shape[1], false, false);
-    return M;
+    // Interpret the data as (d x n) column-major, then transpose
+    arma::mat M((double*)buf.ptr, buf.shape[1], buf.shape[0], false, false);
+    return M.t(); // Now M is n x d, matching the Python layout
 }
+
 
 // Convert an arma::vec to a Python array
 inline py::array_t<double> arma_vec_to_pyarray(const arma::vec &v) {
