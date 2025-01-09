@@ -48,4 +48,13 @@ inline py::array_t<double> arma_mat_to_pyarray(const arma::mat &M) {
     return result;
 }
 
+inline arma::mat Moebius_S(arma::mat &X, arma::vec mu, double rho){
+  
+  arma::mat Y = (1-rho*rho)*(X.each_row() + rho*mu.t());
+  Y = Y.each_col()/(1+2*rho*X*mu+rho*rho);
+  Y = Y.each_row() + rho*mu.t();
+  
+  return Y;
+}
+
 #endif // ARRAY_CONVERTERS_HPP
