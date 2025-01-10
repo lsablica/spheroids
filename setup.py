@@ -1,51 +1,58 @@
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 import pybind11
-import os
+import platform
 
-# Find Eigen headers
-eigen_include = "/usr/include/eigen3"  # Default location on Ubuntu/Debian
-if not os.path.exists(eigen_include):
-    raise RuntimeError("Eigen headers not found. Please install libeigen3-dev")
+# Get include directories for pybind11
+include_dirs = [pybind11.get_include()]
 
+import platform
+
+if platform.system() == "Windows":
+    extra_compile_args = ["/std:c++17", "/openmp"]
+    libraries = ["armadillo"]  # Ensure Armadillo is available
+else:
+    extra_compile_args = ["-std=c++17", "-fopenmp"]
+    libraries = ["armadillo"]
+
+
+# Define the extensions
 ext_modules = [
     Extension(
-        "spheroids.cpp._pkbd",
-        ["src/spheroids/cpp/_pkbd.cpp"],
-        include_dirs=[
-            pybind11.get_include(),
-            eigen_include
-        ],
-        language='c++',
-        extra_compile_args=['-std=c++14']
+        "spheroids.cpp._estim",
+        ["spheroids/cpp/_estim.cpp"],
+        include_dirs=include_dirs,
+        language="c++",
+        extra_compile_args=extra_compile_args,  # Use C++17 and OpenMP
+        libraries=["armadillo"],  # Link the Armadillo library
     ),
     Extension(
-        "spheroids.cpp._scauchy",
-        ["src/spheroids/cpp/_scauchy.cpp"],
-        include_dirs=[
-            pybind11.get_include(),
-            eigen_include
-        ],
-        language='c++',
-        extra_compile_args=['-std=c++14']
+        "spheroids.cpp._utils",
+        ["spheroids/cpp/_utils.cpp"],
+        include_dirs=include_dirs,
+        language="c++",
+        extra_compile_args=extra_compile_args,  # Use C++17 and OpenMP
+        libraries=["armadillo"],  # Link the Armadillo library
     ),
-    Extension(
-        "spheroids.cpp._rpkbd",
-        ["src/spheroids/cpp/_rpkbd.cpp"],
-        include_dirs=[
-            pybind11.get_include(),
-            eigen_include
-        ],
-        language='c++',
-        extra_compile_args=['-std=c++14']
-    )
 ]
 
+# Define the setup configuration
 setup(
     name="spheroids",
     version="0.1.0",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    author="Lukas Sablica",
+    author_email="lsablica@wu.ac.at",
+    description="A package for spherical clustering and probabilistic modeling",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/lsablica/spheroids",
+    packages=["spheroids", "spheroids.cpp"],
     ext_modules=ext_modules,
-    zip_safe=False,
+    install_requires=[
+        "pybind11",
+        "numpy",
+        "torch",
+        "matplotlib",
+    ],
     python_requires=">=3.8",
 )
+
