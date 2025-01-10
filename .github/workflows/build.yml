@@ -72,7 +72,9 @@ jobs:
           LDFLAGS: -L/opt/homebrew/lib -L/opt/homebrew/opt/llvm/lib   # Link against LLVM and Armadillo libraries
           CPPFLAGS: -I/opt/homebrew/include -I/opt/homebrew/opt/llvm/include  # Include LLVM and Armadillo headers
           MACOSX_DEPLOYMENT_TARGET: 10.15
-        run: python setup.py bdist_wheel  
+          LIPO: /usr/bin/lipo                                         # Explicitly set lipo path
+        run: python setup.py bdist_wheel
+
         
       # Build wheels
       - name: Build wheels
