@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.11"]
 
     steps:
       # Checkout the repository
@@ -31,7 +31,7 @@ jobs:
       # Install Python dependencies
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel cibuildwheel
+          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
 
       # OS-specific setup for Linux
       - name: Install Armadillo on Linux
@@ -72,3 +72,4 @@ jobs:
         with:
           name: built-wheels-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/
+          
