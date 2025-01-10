@@ -45,7 +45,7 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           brew update
-          brew install armadillo
+          brew install armadillo llvm libomp
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.15  # Set deployment target for macOS
 
@@ -54,9 +54,22 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           choco install armadillo --version=10.8.2  # Adjust version if necessary
-
+          
+      # Build wheels on macOS
+      - name: Build wheels on macOS
+        if: ${{ matrix.os == 'macos-latest' }}
+        env:
+          CC: /usr/local/opt/llvm/bin/clang  # Use LLVM's clang for OpenMP support
+          CXX: /usr/local/opt/llvm/bin/clang++
+          LDFLAGS: -L/usr/local/opt/llvm/lib
+          CPPFLAGS: -I/usr/local/opt/llvm/include
+          MACOSX_DEPLOYMENT_TARGET: 10.15
+        run: python setup.py bdist_wheel
+        
+        
       # Build wheels
       - name: Build wheels
+        if: ${{ matrix.os != 'macos-latest' }}
         run: |
           python setup.py bdist_wheel
 
