@@ -62,4 +62,10 @@ jobs:
         with:
           name: built-wheels
           path: dist/
+      
+      - name: Test built wheels
+        run: |
+          python -m pip install dist/*.whl
+          python -c "import spheroids; print('Package imported successfully!')"
+
 
