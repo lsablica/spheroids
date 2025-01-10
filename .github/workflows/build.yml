@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest] #, windows-latest]
         python-version: ["3.11"]
 
     steps:
@@ -54,16 +54,23 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           choco install armadillo 
+      
+      - name: Debug LLVM Path
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          brew --prefix llvm
+          ls $(brew --prefix llvm)/bin
+
           
       # Build wheels on macOS
       - name: Build wheels on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         env:
-          PATH: /usr/local/opt/llvm/bin:$PATH   # Ensure LLVM's clang is in PATH
+          PATH: $(brew --prefix llvm)/bin:$PATH   # Ensure LLVM's clang is in PATH
           CC: clang                             # Use clang as the C compiler
           CXX: clang++                          # Use clang++ as the C++ compiler
-          LDFLAGS: -L/usr/local/opt/llvm/lib    # Link against LLVM's lib
-          CPPFLAGS: -I/usr/local/opt/llvm/include  # Include LLVM headers
+          LDFLAGS: -L$(brew --prefix llvm)/lib    # Link against LLVM's lib
+          CPPFLAGS: -I$(brew --prefix llvm)/include  # Include LLVM headers
           MACOSX_DEPLOYMENT_TARGET: 10.15
         run: python setup.py bdist_wheel
         
