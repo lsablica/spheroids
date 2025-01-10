@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
       # Checkout the repository
@@ -33,30 +33,38 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel cibuildwheel
 
-      # OS-specific setup for Linux (inside manylinux2014)
-      - name: Build wheels on Linux
+      # OS-specific setup for Linux
+      - name: Install Armadillo on Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        env:
-          CIBW_BEFORE_BUILD: "yum install -y armadillo-devel"  # Install Armadillo in manylinux
-          CIBW_MANYLINUX: manylinux2014                       # Use manylinux2014 compatibility
-        run: cibuildwheel --output-dir dist
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarmadillo-dev
 
       # OS-specific setup for macOS
-      - name: Build wheels on macOS
+      - name: Install Armadillo on macOS
         if: ${{ matrix.os == 'macos-latest' }}
-        env:
-          MACOSX_DEPLOYMENT_TARGET: 10.15                    # Set macOS deployment target
         run: |
           brew update
           brew install armadillo
-          cibuildwheel --output-dir dist
+        env:
+          MACOSX_DEPLOYMENT_TARGET: 10.15  # Set deployment target for macOS
 
       # OS-specific setup for Windows
-      - name: Build wheels on Windows
+      - name: Install Armadillo on Windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           choco install armadillo --version=10.8.2  # Adjust version if necessary
-          cibuildwheel --output-dir dist
+
+      # Build wheels
+      - name: Build wheels
+        run: |
+          python setup.py bdist_wheel
+
+      # Test built wheels
+      - name: Test built wheels
+        run: |
+          python -m pip install dist/*.whl
+          python -c "import spheroids; print('Package imported successfully!')"
 
       # Upload built wheels
       - name: Upload wheels
@@ -64,9 +72,3 @@ jobs:
         with:
           name: built-wheels-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/
-
-      # Test built wheels
-      - name: Test built wheels
-        run: |
-          python -m pip install dist/*.whl
-          python -c "import spheroids; print('Package imported successfully!')"
