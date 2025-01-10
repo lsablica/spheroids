@@ -54,6 +54,13 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
           choco install armadillo 
+      
+      - name: Debug lipo
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          which lipo || echo "lipo not found"
+          xcode-select --install || echo "Xcode Command Line Tools already installed"
+    
           
       # Build wheels on macOS
       - name: Build wheels on macOS
