@@ -59,14 +59,13 @@ jobs:
       - name: Build wheels on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         env:
-          PATH: /opt/homebrew/opt/llvm/bin:$PATH          # Ensure LLVM's clang is in PATH
-          CC: /opt/homebrew/opt/llvm/bin/clang            # Use LLVM's clang for compilation
-          CXX: /opt/homebrew/opt/llvm/bin/clang++         # Use LLVM's clang++ for C++ compilation
-          LDFLAGS: -L/opt/homebrew/opt/llvm/lib           # Link against LLVM libraries
-          CPPFLAGS: -I/opt/homebrew/opt/llvm/include      # Include LLVM headers
+          PATH: /opt/homebrew/opt/llvm/bin:$PATH                       # Ensure LLVM's clang is in PATH
+          CC: /opt/homebrew/opt/llvm/bin/clang                        # Use LLVM's clang for compilation
+          CXX: /opt/homebrew/opt/llvm/bin/clang++                     # Use LLVM's clang++ for C++ compilation
+          LDFLAGS: -L/opt/homebrew/lib -L/opt/homebrew/opt/llvm/lib   # Link against LLVM and Armadillo libraries
+          CPPFLAGS: -I/opt/homebrew/include -I/opt/homebrew/opt/llvm/include  # Include LLVM and Armadillo headers
           MACOSX_DEPLOYMENT_TARGET: 10.15
-        run: python setup.py bdist_wheel
-        
+        run: python setup.py bdist_wheel  
         
       # Build wheels
       - name: Build wheels
