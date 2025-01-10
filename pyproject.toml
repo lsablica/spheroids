@@ -1,10 +1,33 @@
 [build-system]
-requires = [
-    "setuptools>=45",
-    "wheel",
-    "scikit-build>=0.17.0",
-    "cmake>=3.25.0",
-    "ninja>=1.11.0",
-    "pybind11>=2.6.0"
-]
+requires = ["setuptools", "wheel", "pybind11", "cibuildwheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "spheroids"
+version = "0.1.0"
+description = "A package for spherical clustering and probabilistic modeling"
+authors = [
+    {name = "Lukas Sablica", email = "lsablica@wu.ac.at"},
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+
+dependencies = [
+    "pybind11",
+    "numpy",
+    "torch",
+    "matplotlib"
+]
+
+[tool.cibuildwheel]
+build = ["cp38", "cp39", "cp310", "cp311"]
+
+[tool.cibuildwheel.linux]
+manylinux-policy = "manylinux2014"
+
+[tool.cibuildwheel.windows]
+environment = {CIBW_ENVIRONMENT = "CXXFLAGS='/std:c++17 /openmp'"}
+
+[tool.cibuildwheel.macos]
+macosx-deployment-target = "10.15"

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="misc/Logos/Spheroids1.png" alt="Spheroids Logo" width="200"/>
+  <img src="spheroids/misc/Logos/Spheroids1.png" alt="Spheroids Logo" width="200"/>
 
   # Spheroids
 
