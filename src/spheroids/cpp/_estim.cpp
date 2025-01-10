@@ -35,22 +35,6 @@ double hybridnewton(double c1, double c2, double c3, double tol, int maxiter) {
   return x;
 }
 
-arma::mat logLik_PKBD_intern(const arma::mat &data, const arma::mat &mu_mat, const arma::vec &rho){ 
-  
-  double d = data.n_cols;
-  
-  arma::rowvec row_rho = rho.t(); 
-  arma::rowvec term_1 = log(1-row_rho*row_rho)
-  arma::rowvec term_2 = 1 + row_rho*row_rho
-  
-  arma::mat cross_mat = data*mu_mat
-  cross_mat.each_row() %= -2*row_rho;
-  cross_mat.each_row() += term_2;
-  cross_mat = (-d/2)*arma::log(cross_mat);
-  cross_mat.each_row() += term_1;
-  return cross_mat; 
-} 
-
 
 double hyper2F1(const double b, const double c, const double x){
   double sum = 1.0;
@@ -107,14 +91,22 @@ double hybridnewton2(double d, double target, double tol = 1e-6, int maxiter = 1
 }
 
 
-arma::mat Moebius_S(arma::mat &X, arma::vec mu, double rho){
+arma::mat logLik_PKBD_intern(const arma::mat &data, const arma::mat &mu_mat, const arma::vec &rho){ 
   
-  arma::mat Y = (1-rho*rho)*(X.each_row() + rho*mu.t());
-  Y = Y.each_col()/(1+2*rho*X*mu+rho*rho);
-  Y = Y.each_row() + rho*mu.t();
+  double d = data.n_cols;
   
-  return Y;
-}
+  arma::rowvec row_rho = rho.t(); 
+  arma::rowvec term_1 = log(1-row_rho%row_rho);
+  arma::rowvec term_2 = 1 + row_rho%row_rho;
+  
+  arma::mat cross_mat = data*mu_mat;
+  cross_mat.each_row() %= -2*row_rho;
+  cross_mat.each_row() += term_2;
+  cross_mat = (-d/2)*arma::log(cross_mat);
+  cross_mat.each_row() += term_1;
+  return cross_mat; 
+} 
+
 
 void M_step_PKBD(const arma::mat &data, const arma::mat &beta_matrix, arma::mat &mu_matrix, arma::vec &rho_vector,
                  double tol = 1e-6, int maxiter = 100){
@@ -131,7 +123,7 @@ void M_step_PKBD(const arma::mat &data, const arma::mat &beta_matrix, arma::mat 
   arma::mat scaled_weight_matrix = beta_matrix/wscale_mat;
   arma::mat mu = scaled_weight_matrix.t() * data;
   arma::vec mu_norms = arma::vecnorm(mu, 2, 1);
-  mu_matrix = mu.each_col()/mu_norms;
+  mu_matrix = (mu.each_col()/mu_norms).t();
   arma::rowvec sums_scaled_weight_matrix = sum(scaled_weight_matrix, 0);
   //standardize each
   double c1, c2, c3;
@@ -142,6 +134,23 @@ void M_step_PKBD(const arma::mat &data, const arma::mat &beta_matrix, arma::mat 
     rho_vector(i) = hybridnewton(c1,c2,c3,tol,maxiter);
   }
 }
+
+
+arma::mat logLik_spcauchy_intern(const arma::mat &data, const arma::mat &mu_mat, const arma::vec &rho){ 
+  
+  double d = data.n_cols;
+  
+  arma::rowvec row_rho = rho.t(); 
+  arma::rowvec term_1 = (d-1)*log(1-row_rho%row_rho);
+  arma::rowvec term_2 = 1 + row_rho%row_rho;
+  
+  arma::mat cross_mat = data*mu_mat;
+  cross_mat.each_row() %= -2*row_rho;
+  cross_mat.each_row() += term_2;
+  cross_mat = -(d-1)*arma::log(cross_mat);
+  cross_mat.each_row() += term_1;
+  return cross_mat; 
+} 
 
 void M_step_spcauchy(const arma::mat &data, const arma::mat &beta_matrix, arma::mat &mu_matrix, arma::vec &rho_vector,
                      double tol = 1e-6, int maxiter = 100){
@@ -165,15 +174,13 @@ void M_step_spcauchy(const arma::mat &data, const arma::mat &beta_matrix, arma::
     psiold = 2*mu0;
     norm = arma::norm(mu0, 2);
     mu0 = mu0/norm;
-    rho0 = hybridnewton(d, norm, tol = tol, maxiter = maxiter);
+    rho0 = hybridnewton2(d, norm, tol = tol, maxiter = maxiter);
     psi = rho0*mu0;
-    Rcout << "psi0 : " << psi << "\n";
 
     while(arma::norm(psi-psiold, 2) > tol && niter < maxiter){
       psiold = psi;
       weighted_trans_data = Moebius_S(data, - mu0, rho0).t() * w;
       psi = psiold + ((d+1)*(1-rho0*rho0)/(2*d))*weighted_trans_data;
-      Rcout << "psi : " << psi << "\n";
       rho0 = arma::norm(psi, 2);
       mu0 = psi/rho0;
       niter += 1;
@@ -184,7 +191,6 @@ void M_step_spcauchy(const arma::mat &data, const arma::mat &beta_matrix, arma::
   mu_matrix = results_mu;
   rho_vector = results_rho;
 }
-
 
 void hard(arma::mat &beta_matrix, int K, int n){
   arma::uvec j(1), maxindex = index_max( beta_matrix, 1);
@@ -208,11 +214,15 @@ void stoch(arma::mat &beta_matrix, int K, int n){
   return;
 } 
 
+
+
+
 bool E_step(const arma::mat &data, arma::mat &beta_matrix, arma::vec &rho_vec, arma::mat &mu_matrix,
-            const arma::rowvec &pi_vector, void (*E_method)(arma::mat&, int, int), int &K, double minalpha,
-            int n, double p, double &lik, double reltol, double &max_log_lik){
+            arma::rowvec &pi_vector, void (*E_method)(arma::mat&, int, int), 
+            arma::mat (*Loglik)(const arma::mat&, const arma::mat&, const arma::vec&),
+            int &K, double minalpha, int n, double p, double &lik, double reltol){ 
   
-  arma::mat A = logLik_PKBD_intern(data, mu_matrix, rho_vec);
+  arma::mat A = Loglik(data, mu_matrix, rho_vec);
   A += arma::repelem(log(pi_vector),n,1);
   
   arma::vec maxx = max( A, 1);
@@ -224,15 +234,20 @@ bool E_step(const arma::mat &data, arma::mat &beta_matrix, arma::vec &rho_vec, a
   } else{ 
     lik = lik_new;
     A.each_col() -= maxx;
-    beta_matrix = exp(A);
+    A = exp(A);
+    beta_matrix = A;
     E_method(beta_matrix, K, n);
-    pi_vector = sum(beta_matrix)/n;
-    if(minalpha>0){
-      subset = find( pi_vector > minalpha);
-      beta_matrix = normalise(beta_matrix.cols(subset),1,1);
-      K = beta_matrix.n_cols;
+    pi_vector = mean(beta_matrix);
+    if(minalpha>0 && arma::any(pi_vector < minalpha)){
+      arma::uvec subset = arma::find( pi_vector > minalpha);
+      K = subset.n_elem;
+      A = A.cols(subset);
+      beta_matrix = A;
+      beta_matrix = arma::normalise(beta_matrix, 1,1);
+      E_method(beta_matrix, K, n);
+      pi_vector = mean(beta_matrix);
       mu_matrix = mu_matrix.cols(subset);
-      rho_vec = rho_vec.cols(subset);
+      rho_vec = rho_vec(subset);
     } 
     return false;
   }
@@ -241,45 +256,57 @@ bool E_step(const arma::mat &data, arma::mat &beta_matrix, arma::vec &rho_vec, a
 
 py::tuple EM(const py::array_t<double> &data_arr, int K, String E_type, String M_type,  double minalpha, int maxiter, double reltol){
   arma::mat data = pyarray_to_arma_mat(data_arr);
-  data = normalise(data, 2, 1); // normalize in case
+  arma::mat data = arma::normalise(data, 2, 1); // normalize in case
   double p = data.n_cols;
   int n = data.n_rows;
   
-  double (*M_method)(arma::mat&, arma::mat&, arma::mat&, arma::vec&, double, int);
+  void (*M_step)(const arma::mat&, const arma::mat&, arma::mat&, arma::vec&, double, int);
   void (*E_method)(arma::mat&, int, int);
+  arma::mat (*Loglik)(const arma::mat&, const arma::mat&, const arma::vec&);
+  
   
   if(E_type == "softmax"){
     E_method = soft;
   } else if(E_type == "hardmax"){
     E_method = hard;
-  } else{ // stochmax 
+  } else{ // stochmax  
     E_method = stoch;
-  } 
+  }  
   
   if(M_type == "pkbd"){
-    M_method = M_step_PKBD;
-  } else{ // "spcauchy" 
-    M_method = M_step_spcauchy;
-  } 
+    M_step = M_step_PKBD;
+    Loglik = logLik_PKBD_intern;
+  } else{ // "spcauchy"  
+    M_step = M_step_spcauchy;
+    Loglik = logLik_spcauchy_intern;
+  }  
   
-  arma::mat beta_matrix(n, K);
-  arma::mat mu_matrix(p, K);
-  arma::vec rho_vec(K);
-  arma::rowvec pi_vector(K);
-  double log_lik;
+  // preproc initialization, beta_matrix cyclically with 0.9, pi_vec accordingly, finish with one M-step
+  arma::mat beta_matrix(n, K, arma::fill::value(0.1/(K-1)));
+  beta_matrix.col(0).fill(0.9);
+  for (int i = 0; i < n; i++) {
+    beta_matrix.row(i) = arma::shuffle( beta_matrix.row(i) );
+  }
+  arma::rowvec pi_vector = arma::mean(beta_matrix);
+  
+  arma::mat mu_matrix(p, K, arma::fill::randn);
+  mu_matrix = arma::normalise(mu_matrix, 2, 1);
+  arma::vec rho_vec(K, arma::fill::randu);
+  M_step(data, beta_matrix, mu_matrix, rho_vec, reltol, maxiter);
+  double log_lik = -1e10;
   
   
   int i = 0;
   bool stop;
   while(i<maxiter){
-    stop = E_step(/*c-r*/data,/*r*/beta_matrix,/*c-r*/rho_vec,/*c-r*/mu_matrix,/*c-r*/ pi_vector, E_method, /*r*/K,
-                  minalpha, n, p, log_lik, reltol);
+    stop = E_step(/*c-r*/data,/*r*/beta_matrix,/*c-r*/rho_vec,/*c-r*/mu_matrix,/*c-r*/ pi_vector, 
+                  E_method, Loglik, /*r*/K, minalpha, n, p, log_lik, reltol);
     if(stop) break;
-    M_step(/*c-r*/data, M_method,/*c-r*/beta_matrix,/*r*/rho_vec,/*r*/mu_matrix,/*r*/pi_vector, K, reltol, p, n);
+    M_step(/*c-r*/data,/*c-r*/beta_matrix,/*r*/mu_matrix,/*r*/rho_vec, reltol, maxiter);
     i += 1;
-  }
+  } 
   
-  return  py::make_tuple(beta_matrix, rho_vec.t(), mu_matrix, pi_vector, log_lik);
+  return  py::make_tuple(beta_matrix, rho_vec.t(), mu_matrix, pi_vector, log_lik, i);
 } 
 
 PYBIND11_MODULE(_pkbd, m) {

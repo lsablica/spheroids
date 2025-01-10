@@ -7,7 +7,7 @@
 
 namespace py = pybind11;
 
-py::array_t<double> rPKBD_ACG(int n, double rho, const py::array_t<double> &mu_arr){
+py::array_t<double> rpkbd(int n, double rho, const py::array_t<double> &mu_arr){
   arma::vec mu = pyarray_to_arma_vec(mu_arr);
 
   double lambda = 2*rho/(1+rho*rho);
@@ -70,7 +70,7 @@ py::array_t<double> rspcauchy(int n, double rho, const py::array_t<double> &mu_a
 
 
 
-py::array_t<double> logLik_spcauchy(const py::array_t<double> &data_arr,
+py::array_t<double> loglik_spcauchy(const py::array_t<double> &data_arr,
                                    const py::array_t<double> &mu_vec_arr,
                                    double rho){ 
 
@@ -82,7 +82,7 @@ py::array_t<double> logLik_spcauchy(const py::array_t<double> &data_arr,
 } 
 
 
-py::array_t<double> logLik_PKBD(const py::array_t<double> &data_arr, const py::array_t<double> &mu_vec_arr, double rho){ 
+py::array_t<double> loglik_pkbd(const py::array_t<double> &data_arr, const py::array_t<double> &mu_vec_arr, double rho){ 
   
   arma::mat data = pyarray_to_arma_mat(data_arr);
   arma::vec mu_vec = pyarray_to_arma_vec(mu_vec_arr);
@@ -95,7 +95,7 @@ py::array_t<double> logLik_PKBD(const py::array_t<double> &data_arr, const py::a
 PYBIND11_MODULE(_rpkbd, m) {
   m.doc() = "Utilities for PKBD and spherical Cauchy distributions";
   
-  m.def("rPKBD_ACG", &rPKBD_ACG,
+  m.def("rpkbd", &rPKBD_ACG,
         py::arg("n"),
         py::arg("rho"),
         py::arg("mu"),
@@ -128,7 +128,7 @@ PYBIND11_MODULE(_rpkbd, m) {
         )pbdoc"
   );
 
-  m.def("logLik_spcauchy", &logLik_sCauchy,
+  m.def("loglik_spcauchy", &logLik_sCauchy,
         py::arg("data"),
         py::arg("mu_vec"),
         py::arg("rho"),
@@ -145,7 +145,7 @@ PYBIND11_MODULE(_rpkbd, m) {
         )pbdoc"
   );
 
-    m.def("logLik_PKBD", &logLik_PKBD,
+    m.def("loglik_pkbd", &logLik_PKBD,
         py::arg("data"),
         py::arg("mu_vec"),
         py::arg("rho"),
