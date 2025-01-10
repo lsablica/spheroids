@@ -21,11 +21,7 @@ dependencies = [
 ]
 
 
-[tool.cibuildwheel.linux]
-manylinux-policy = "manylinux2014"
-
 [tool.cibuildwheel.windows]
 environment = {CIBW_ENVIRONMENT = "CXXFLAGS='/std:c++17 /openmp'"}
 
-[tool.cibuildwheel.macos]
-macosx-deployment-target = "10.15"
+

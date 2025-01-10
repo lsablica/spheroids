@@ -31,36 +31,40 @@ jobs:
       # Install dependencies
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install cibuildwheel
+          python -m pip install --upgrade pip setuptools wheel cibuildwheel
 
-      # OS-specific setup
-      - name: OS-specific setup
+      # OS-specific setup for Armadillo
+      - name: OS-specific setup for Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y libarmadillo-dev
 
-      - name: OS-specific setup
+      - name: OS-specific setup for macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           brew update
           brew install armadillo
+        env:
+          MACOSX_DEPLOYMENT_TARGET: 10.15  # Set deployment target for macOS
 
-      - name: OS-specific setup
+      - name: OS-specific setup for Windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          choco install armadillo --version=14.2.2 # Replace with correct version if available
+          choco install armadillo --version=10.8.2  # Adjust version if necessary
 
-      # Build wheels
-      - name: Build wheels with cibuildwheel
+      # Build wheels with cibuildwheel
+      - name: Build wheels
+        env:
+          CIBW_MANYLINUX: manylinux2014          # Set Linux compatibility
+          MACOSX_DEPLOYMENT_TARGET: 10.15        # Set macOS deployment target
         run: cibuildwheel --output-dir dist
 
-      # Upload built wheels as artifacts
+      # Upload built wheels
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: built-wheels
+          name: built-wheels-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/
       
       - name: Test built wheels
