@@ -45,9 +45,19 @@ jobs:
 
       - name: Build wheels with cibuildwheel
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel"
-          fi
+          case "${{ matrix.os }}" in
+            "ubuntu-latest")
+              # Linux: Install Armadillo inside the manylinux container
+              export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel"
+              ;;
+            "macOS-latest")
+              # macOS: Set deployment target to match Homebrew libraries
+              export MACOSX_DEPLOYMENT_TARGET=14.0
+              ;;
+            "windows-latest")
+              echo "Windows build steps go here"
+              ;;
+          esac
           cibuildwheel --output-dir wheelhouse
           
       - name: Upload wheel artifacts
