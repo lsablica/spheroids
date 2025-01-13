@@ -39,8 +39,8 @@ jobs:
           brew update
           brew install armadillo libomp
           # In case you need env vars so the compiler finds libomp, set them:
-          export CXXFLAGS="-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include"
-          export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -lomp"
+          export CXXFLAGS="-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/armadillo/include"
+          export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -lomp -L/opt/homebrew/opt/armadillo/lib"
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
 
       - name: Build wheel
