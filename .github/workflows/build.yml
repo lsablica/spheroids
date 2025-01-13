@@ -62,6 +62,7 @@ jobs:
           
       - name: Get package version
         id: get-version
+        shell: bash
         run: |
           echo "PACKAGE_VERSION=$(python setup.py --version)" >> $GITHUB_ENV    
  
