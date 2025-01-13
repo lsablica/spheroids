@@ -47,10 +47,15 @@ jobs:
       - name: Install build dependencies (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          choco install vcpkg --no-progress --confirm
-          set PATH=C:\ProgramData\chocolatey\bin;C:\vcpkg;%PATH%
+          # 1) Clone vcpkg into C:\vcpkg
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
 
-          vcpkg install armadillo
+          # 2) Build vcpkg.exe
+          cd C:\vcpkg
+          .\bootstrap-vcpkg.bat -disableMetrics
+
+          # 3) Install Armadillo (and any other libs) via vcpkg
+          .\vcpkg.exe install armadillo
 
           # Upgrade pip + install cibuildwheel
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
