@@ -62,6 +62,7 @@ jobs:
  
 
       - name: Build wheels with cibuildwheel
+        shell: bash
         run: |
           case "${{ matrix.os }}" in
             "ubuntu-latest")
