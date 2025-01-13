@@ -6,7 +6,7 @@
   [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
   [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
   [![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?&logo=PyTorch&logoColor=white)](https://pytorch.org/)
-  [![GitHub Issues](https://img.shields.io/github/issues/lsablica/spheroids.svg)](https://github.com/lsablica/spheroids/issues)
+  [![GitHub Issues](https://img.shields.io/github/issues/lsablica/spheroids.svg)](https://github.com/lsablica/spheroids2/issues)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
   *High-performance spherical clustering with PyTorch and C++*
