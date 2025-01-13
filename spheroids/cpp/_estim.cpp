@@ -122,7 +122,7 @@ void M_step_PKBD(const arma::mat &data, const arma::mat &beta_matrix, arma::mat 
   arma::mat wscale_mat =  1 + pow(rho_mat, 2) - 2*rho_mat%crossmat;
   arma::mat scaled_weight_matrix = beta_matrix/wscale_mat;
   arma::mat mu = scaled_weight_matrix.t() * data;
-  arma::vec mu_norms = arma::vecnorm(mu, 2, 1);
+  arma::vec mu_norms = arma::sqrt(arma::sum(arma::pow(mu, 2), 1));
   mu_matrix = (mu.each_col()/mu_norms).t();
   arma::rowvec sums_scaled_weight_matrix = sum(scaled_weight_matrix, 0);
   //standardize each
