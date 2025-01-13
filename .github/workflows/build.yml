@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
         python-version: ["3.11"]
     steps:
       - name: Check out repo
@@ -42,6 +42,19 @@ jobs:
           export CXXFLAGS="-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/armadillo/include"
           export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -lomp -L/opt/homebrew/opt/armadillo/lib"
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
+          
+      # ---------- WINDOWS DEPENDENCIES ----------
+      - name: Install build dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install vcpkg --no-progress --confirm
+          set PATH=C:\ProgramData\chocolatey\bin;C:\vcpkg;%PATH%
+
+          vcpkg install armadillo
+
+          # Upgrade pip + install cibuildwheel
+          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
+ 
 
       - name: Build wheels with cibuildwheel
         run: |
@@ -56,6 +69,8 @@ jobs:
               ;;
             "windows-latest")
               echo "Windows build steps go here"
+              set CXXFLAGS=/std:c++17 /openmp /I"C:\vcpkg\installed\x64-windows\include"
+              set LDFLAGS=/LIBPATH:"C:\vcpkg\installed\x64-windows\lib"
               ;;
           esac
           

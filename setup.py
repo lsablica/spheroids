@@ -3,14 +3,20 @@ import pybind11
 import platform
 
 # Get include directories for pybind11
-include_dirs = [pybind11.get_include()]
 system = platform.system()
 
 libraries = ["armadillo"]
 extra_link_args = []
-extra_compile_args = ["-std=c++17"]
+extra_compile_args = []
+if system != "Windows":
+    extra_compile_args.append("-std=c++17")
+    
 if system == "Windows":
-    extra_compile_args += ["/openmp"]
+    extra_compile_args += ["/std:c++17", "/openmp"]
+    # Tell the linker where to find .lib files from vcpkg
+    extra_link_args += [
+        "/LIBPATH:C:\\vcpkg\\installed\\x64-windows\\lib"
+    ]
 elif system == "Darwin":
     # macOS needs -Xpreprocessor -fopenmp, plus link against -lomp
     extra_compile_args += [
@@ -32,7 +38,9 @@ ext_modules = [
     Extension(
         "spheroids.cpp._estim",
         ["spheroids/cpp/_estim.cpp"],
-        include_dirs=include_dirs,
+        include_dirs=[pybind11.get_include(),
+                      "C:\\vcpkg\\installed\\x64-windows\\include"
+                     ] if system == "Windows" else [pybind11.get_include()],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
         libraries=libraries,
@@ -41,7 +49,9 @@ ext_modules = [
     Extension(
         "spheroids.cpp._utils",
         ["spheroids/cpp/_utils.cpp"],
-        include_dirs=include_dirs,
+        include_dirs=[pybind11.get_include(),
+                      "C:\\vcpkg\\installed\\x64-windows\\include"
+                     ] if system == "Windows" else [pybind11.get_include()],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
         libraries=libraries,
