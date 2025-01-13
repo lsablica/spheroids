@@ -4,34 +4,39 @@ import platform
 
 # Get include directories for pybind11
 include_dirs = [pybind11.get_include()]
+system = platform.system()
 
-import platform
-
-if platform.system() == "Windows":
-    extra_compile_args = ["/std:c++17", "/openmp"]
-    libraries = ["armadillo"]  # Ensure Armadillo is available
+libraries = ["armadillo"]
+extra_link_args = []
+extra_compile_args = ["-std=c++17"]
+if system == "Windows":
+    extra_compile_args += ["/openmp"]
+elif system == "Darwin":
+    # macOS needs -Xpreprocessor -fopenmp, plus link against -lomp
+    extra_compile_args += ["-Xpreprocessor", "-fopenmp"]
+    extra_link_args += ["-lomp"]
 else:
-    extra_compile_args = ["-std=c++17", "-fopenmp"]
-    libraries = ["armadillo"]
+    # Linux
+    extra_compile_args += ["-fopenmp"]
 
-
-# Define the extensions
 ext_modules = [
     Extension(
         "spheroids.cpp._estim",
         ["spheroids/cpp/_estim.cpp"],
         include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+        libraries=libraries,
         language="c++",
-        extra_compile_args=extra_compile_args,  # Use C++17 and OpenMP
-        libraries=["armadillo"],  # Link the Armadillo library
     ),
     Extension(
         "spheroids.cpp._utils",
         ["spheroids/cpp/_utils.cpp"],
         include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+        libraries=libraries,
         language="c++",
-        extra_compile_args=extra_compile_args,  # Use C++17 and OpenMP
-        libraries=["armadillo"],  # Link the Armadillo library
     ),
 ]
 
