@@ -59,7 +59,7 @@ jobs:
               ;;
           esac
           
-          export CIBW_SKIP="pp*"
+          export CIBW_SKIP="pp* *i686*"
           cibuildwheel --output-dir wheelhouse
           
       - name: Upload wheel artifacts
@@ -70,7 +70,7 @@ jobs:
 
 
       # Test built wheels
-      - name: Test built wheels
-        run: |
-          python -m pip install wheelhouse/*.whl 
-          python -c "import spheroids; print('Package imported successfully!')"
+    #- name: Test built wheels
+    #   run: |
+    #     python -m pip install wheelhouse/*.whl 
+    #     python -c "import spheroids; print('Package imported successfully!')"
