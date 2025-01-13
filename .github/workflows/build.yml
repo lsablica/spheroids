@@ -59,8 +59,12 @@ jobs:
 
           # Upgrade pip + install cibuildwheel
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
+          
+      - name: Get package version
+        id: get-version
+        run: |
+          echo "PACKAGE_VERSION=$(python setup.py --version)" >> $GITHUB_ENV    
  
-
       - name: Build wheels with cibuildwheel
         shell: bash
         run: |
@@ -86,7 +90,7 @@ jobs:
       - name: Upload wheel artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: spheroids-${{ env.PACKAGE_VERSION }}-${{ matrix.os }}-wheels
           path: wheelhouse/*.whl
 
 
