@@ -46,7 +46,7 @@ jobs:
       - name: Build wheels with cibuildwheel
         run: |
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel libomp-devel"
+            export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel"
           fi
           cibuildwheel --output-dir wheelhouse
           
