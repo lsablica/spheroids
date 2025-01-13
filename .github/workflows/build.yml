@@ -54,7 +54,7 @@ jobs:
           auditwheel repair dist/*.whl --plat manylinux2014_x86_64 -w wheelhouse
 
       - name: Upload wheel artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
           path: |
