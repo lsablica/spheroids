@@ -59,6 +59,8 @@ ext_modules = [
     ),
 ]
 
+with open("README.md", "r", encoding="utf-8") as f:
+    long_description = f.read()
 # Define the setup configuration
 setup(
     name="spheroids",
@@ -66,7 +68,7 @@ setup(
     author="Lukas Sablica",
     author_email="lsablica@wu.ac.at",
     description="A package for spherical clustering and probabilistic modeling",
-    long_description=open("README.md").read(),
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lsablica/spheroids",
     packages=["spheroids", "spheroids.cpp"],
