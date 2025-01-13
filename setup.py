@@ -17,6 +17,7 @@ if system == "Windows":
     extra_link_args += [
         "/LIBPATH:C:\\vcpkg\\installed\\x64-windows\\lib"
     ]
+    libraries += ["openblas"]
 elif system == "Darwin":
     # macOS needs -Xpreprocessor -fopenmp, plus link against -lomp
     extra_compile_args += [
