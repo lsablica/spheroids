@@ -29,7 +29,7 @@ jobs:
           # Armadillo and OpenMP
           sudo apt-get install -y libarmadillo-dev libomp-dev
           # Also make sure we have an updated pip/setuptools/wheel
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
           # auditwheel (for manylinux repair)
           python -m pip install auditwheel
 
@@ -41,7 +41,7 @@ jobs:
           # In case you need env vars so the compiler finds libomp, set them:
           # export CPPFLAGS="-I/usr/local/opt/libomp/include"
           # export LDFLAGS="-L/usr/local/opt/libomp/lib -lomp"
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
 
       - name: Build wheel
         run: |
