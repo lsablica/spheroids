@@ -59,7 +59,7 @@ jobs:
               ;;
           esac
           
-          export CIBW_SKIP="pp* *i686*"
+          export CIBW_SKIP="pp* *i686* *musllinux*"
           cibuildwheel --output-dir wheelhouse
           
       - name: Upload wheel artifacts
