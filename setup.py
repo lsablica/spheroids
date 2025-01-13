@@ -13,8 +13,17 @@ if system == "Windows":
     extra_compile_args += ["/openmp"]
 elif system == "Darwin":
     # macOS needs -Xpreprocessor -fopenmp, plus link against -lomp
-    extra_compile_args += ["-Xpreprocessor", "-fopenmp"]
-    extra_link_args += ["-lomp"]
+    extra_compile_args += [
+        "-Xpreprocessor", 
+        "-fopenmp", 
+        "-I/opt/homebrew/opt/libomp/include",
+        "-I/opt/homebrew/opt/armadillo/include"
+    ]
+    extra_link_args += [
+        "-lomp",
+        "-L/opt/homebrew/opt/libomp/lib",
+        "-L/opt/homebrew/opt/armadillo/lib"
+    ]
 else:
     # Linux
     extra_compile_args += ["-fopenmp"]
