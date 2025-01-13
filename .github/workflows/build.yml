@@ -58,6 +58,8 @@ jobs:
               echo "Windows build steps go here"
               ;;
           esac
+          
+          export CIBW_SKIP="pp*"
           cibuildwheel --output-dir wheelhouse
           
       - name: Upload wheel artifacts
