@@ -44,8 +44,8 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
 
       - name: Build wheels with cibuildwheel
-  	run: cibuildwheel --output-dir wheelhouse
-  	
+        run: |
+          cibuildwheel --output-dir wheelhouse
   	
       - name: Upload wheel artifacts
         uses: actions/upload-artifact@v3
