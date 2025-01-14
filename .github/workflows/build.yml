@@ -1,10 +1,9 @@
 name: Build wheels
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  # Trigger on new releases only
+  release:
+    types: [published]
 
 jobs:
   build_wheels:
@@ -94,6 +93,12 @@ jobs:
           name: spheroids-${{ env.PACKAGE_VERSION }}-${{ matrix.os }}-wheels
           path: wheelhouse/*.whl
 
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+        env:
+          TWINE_USERNAME: "__token__"    
 
       # Test built wheels
     #- name: Test built wheels
