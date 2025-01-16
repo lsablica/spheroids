@@ -46,7 +46,7 @@ Before installing, ensure you have:
 
 - Python ≥3.8
 - C++ compiler with C++14 support
-- Eigen3 library
+- Armadillo library
 
 ```bash
 # Ubuntu/Debian
