@@ -13,6 +13,35 @@ class HadamardRepara(torch.nn.Module):
 
   def forward(self, x):
     return x * self.p.repeat_interleave(self.response_dim, dim=0)
+  
+
+
+class spcauchy:
+    """Wrapper for Spherical Cauchy C++ functions"""
+    
+    @staticmethod
+    def log_likelihood(data, mu, rho):
+        """Wrapper for logLik_sCauchy C++ function"""
+        return loglik_spcauchy(data, mu, rho)
+    
+    @staticmethod
+    def random_sample(n, mu, rho):
+        """Wrapper for rspcauchy C++ function"""
+        return rspcauchy(n, rho, mu)
+
+class PKBD:
+    """Wrapper for PKBD C++ functions"""
+    
+    @staticmethod
+    def log_likelihood(data, mu, rho):
+        """Wrapper for logLik_PKBD C++ function"""
+        return loglik_pkbd(data, mu, rho)
+    
+    @staticmethod
+    def random_sample(n, mu, rho):
+        """Wrapper for rPKBD_ACG C++ function"""
+        return rpkbd(n, rho, mu)    
+
 
 
 class SphericalClustering(nn.Module):
@@ -143,9 +172,31 @@ class SphericalClustering(nn.Module):
             loss.backward()
             optimizer.step()
 
+    def fit_no_covariates(self, Y, num_epochs=100, tol = 1e-4):
+        # turn Y into numpy
+        Y = Y.cpu().numpy()
+        results = EM(Y, self.num_clusters, "softmax", self.distribution, self.min_weight, num_epochs, tol)
+        self.W = results[0]
+        self.pi = results[3]
+        self.loglik = results[4]
+        mu, rho = results[2], results[1]
+        mat = mu * np.transpose(rho/(1-rho))
+        mat = mat.reshape((1, -1))
+        with torch.no_grad():
+            self.A.weight.copy_(torch.tensor(mat, dtype=torch.float32).to(self.device))
     
     def fit(self, X, Y, num_epochs=100, num_inner_steps=10, lr = 1e-3, tol = 1e-4, reguralisation = 0, plot = True):
         # Fit the model using EM algorithm
+        
+        # Check if any covariates are provided or only intercept in X
+        #only intercept which are all equal
+        if X is None or (X.size(1) == 1 and torch.all(X[:,0] == X[0,0])): 
+            self.fit_no_covariates(Y, num_epochs, tol)
+            return None
+            
+
+            
+
         X = X.to(self.device)
         Y = Y.to(self.device)
         if reguralisation > 0:
