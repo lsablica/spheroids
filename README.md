@@ -24,12 +24,12 @@
 ## Key Features  
 
 🚀 **High Performance**
-- Core computations implemented in C++ with Eigen
+- Core computations implemented in C++ with Armadillo
 - GPU acceleration via PyTorch
 - Efficient batch processing
 
 🎯 **Multiple Distributions**
-- PKBD 
+- Poisson kernel-based Distribution (PKBD) 
 - Spherical Cauchy distribution
 - Extensible architecture for new distributions
 
@@ -197,7 +197,7 @@ If you use Spheroids in your research, please cite:
 
 ```bibtex
 @software{spheroids,
-  title = {Spheroids: A Python Package for Spherical Clustering Models},
+  title = {spheroids: A Python Package for Spherical Clustering Models},
   author = {Lukas Sablica},
   year = {2024},
   url = {https://github.com/lsablica/spheroids}
