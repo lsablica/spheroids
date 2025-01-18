@@ -101,7 +101,7 @@ Access optimized C++ implementations directly:
 ```python
 from spheroids.distributions import PKBD
 
-# Generate random samples
+# Generate random samples 
 samples = PKBD.random_sample(
     n=100,
     rho=0.5,
