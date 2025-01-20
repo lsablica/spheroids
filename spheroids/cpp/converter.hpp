@@ -42,9 +42,37 @@ inline py::array_t<double> arma_vec_to_pyarray(const arma::vec &v) {
 
 // Convert an arma::mat to a Python array
 inline py::array_t<double> arma_mat_to_pyarray(const arma::mat &M) {
+    std::vector<py::ssize_t> shape = {
+        (py::ssize_t)M.n_rows,
+        (py::ssize_t)M.n_cols
+    };
+    std::vector<py::ssize_t> strides = {
+        (py::ssize_t)(sizeof(double)),
+        (py::ssize_t)(sizeof(double) * M.n_rows)
+    };
+    return py::array_t<double>(
+        py::buffer_info(
+            const_cast<double*>(M.memptr()),
+            sizeof(double),
+            py::format_descriptor<double>::format(),
+            2,
+            shape,
+            strides
+        )
+    );
+}
+
+inline py::array_t<double> arma_mat_to_pyarray_copy(const arma::mat &M){
     py::array_t<double> result({(py::ssize_t)M.n_rows, (py::ssize_t)M.n_cols});
-    py::buffer_info buf = result.request();
-    std::memcpy(buf.ptr, M.memptr(), M.n_elem * sizeof(double));
+    auto buf = result.request();
+    double* dst = static_cast<double*>(buf.ptr);
+
+    // Copy in row-major order
+    for (size_t r = 0; r < M.n_rows; ++r) {
+        for (size_t c = 0; c < M.n_cols; ++c) {
+            dst[r * M.n_cols + c] = M(r, c);
+        }
+    }
     return result;
 }
 
