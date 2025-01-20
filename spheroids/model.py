@@ -175,7 +175,7 @@ class SphericalClustering(nn.Module):
     def fit_no_covariates(self, Y, num_epochs=100, tol = 1e-4):
         # turn Y into numpy
         if isinstance(Y, torch.Tensor):
-            Y = Y.cpu().numpy()
+            Y = np.ascontiguousarray(Y.cpu().numpy(), dtype=np.float64)
         results = EM(Y, self.num_clusters, "softmax", self.distribution, self.min_weight, num_epochs, tol)
         self.W = torch.tensor(results[0])
         self.pi = torch.tensor(results[3])
