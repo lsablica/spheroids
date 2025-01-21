@@ -6,6 +6,22 @@ import matplotlib.pyplot as plt
 from .cpp import EM, loglik_pkbd, loglik_spcauchy, rspcauchy, rpkbd
 
 class HadamardRepara(torch.nn.Module):
+    """
+    A PyTorch module that applies a Hadamard reparametrization to the input tensor.
+
+    Parameters:
+        num_clusters (int): Number of clusters.
+        response_dim (int): Dimensionality of the response variable.
+        device (str): Device to allocate tensors ('cpu' or 'cuda').
+
+    Methods:
+        forward(x):
+            Applies the Hadamard reparametrization to the input tensor.
+            Args:
+                x (torch.Tensor): Input tensor.
+            Returns:
+                torch.Tensor: Reparametrized tensor.
+    """
   def __init__(self, num_clusters, response_dim, device):
     super().__init__()
     self.p = torch.nn.Parameter(torch.ones(num_clusters, 1)).to(device)
@@ -17,7 +33,28 @@ class HadamardRepara(torch.nn.Module):
 
 
 class spcauchy:
-    """Wrapper for Spherical Cauchy C++ functions"""
+    """
+    Wrapper class for Spherical Cauchy distribution functions implemented in C++.
+
+    Static Methods:
+        log_likelihood(data, mu, rho):
+            Computes the log-likelihood of the Spherical Cauchy distribution.
+            Args:
+                data (numpy.ndarray or torch.Tensor): Input data.
+                mu (numpy.ndarray): Mean direction vector.
+                rho (float): Concentration parameter.
+            Returns:
+                numpy.ndarray: Log-likelihood values.
+
+        random_sample(n, mu, rho):
+            Generates random samples from the Spherical Cauchy distribution.
+            Args:
+                n (int): Number of samples.
+                mu (numpy.ndarray): Mean direction vector.
+                rho (float): Concentration parameter.
+            Returns:
+                numpy.ndarray: Random samples.
+    """
     
     @staticmethod
     def log_likelihood(data, mu, rho):
@@ -33,8 +70,29 @@ class spcauchy:
         return rspcauchy(n, rho, mu)
 
 class PKBD:
-    """Wrapper for PKBD C++ functions"""
-    
+    """
+    Wrapper class for Poisson Kernel-Based Distribution (PKBD) functions implemented in C++.
+
+    Static Methods:
+        log_likelihood(data, mu, rho):
+            Computes the log-likelihood of the PKBD.
+            Args:
+                data (numpy.ndarray or torch.Tensor): Input data.
+                mu (numpy.ndarray): Mean direction vector.
+                rho (float): Concentration parameter.
+            Returns:
+                numpy.ndarray: Log-likelihood values.
+
+        random_sample(n, mu, rho):
+            Generates random samples from the PKBD.
+            Args:
+                n (int): Number of samples.
+                mu (numpy.ndarray): Mean direction vector.
+                rho (float): Concentration parameter.
+            Returns:
+                numpy.ndarray: Random samples.
+    """
+
     @staticmethod
     def log_likelihood(data, mu, rho):
         if isinstance(data, torch.Tensor):
@@ -51,6 +109,87 @@ class PKBD:
 
 
 class SphericalClustering(nn.Module):
+    """
+    A PyTorch module for spherical clustering using Spherical Cauchy or PKBD distributions.
+
+    Parameters:
+        num_covariates (int): Number of covariates.
+        response_dim (int): Dimensionality of the response variable.
+        num_clusters (int): Number of clusters.
+        distribution (str): Distribution type ('spcauchy' or 'pkbd').
+        min_weight (float): Minimum weight threshold for cluster survival.
+        device (str): Device to allocate tensors ('cpu' or 'cuda').
+
+    Properties:
+        active_components:
+            Returns the number of active clusters.
+        df:
+            Returns the degrees of freedom of the model.
+
+    Methods:
+        forward(X):
+            Performs a forward pass to compute cluster embeddings.
+            Args:
+                X (torch.Tensor): Covariates.
+            Returns:
+                Tuple[torch.Tensor, torch.Tensor]: Normalized embeddings (mu) and concentration (rho).
+
+        log_likelihood(mu, rho, Y, distribution):
+            Computes the log-likelihood for the given embeddings and response variable.
+            Args:
+                mu (torch.Tensor): Mean direction.
+                rho (torch.Tensor): Concentration.
+                Y (torch.Tensor): Response variable.
+                distribution (str): Distribution type ('spcauchy' or 'pkbd').
+            Returns:
+                torch.Tensor: Log-likelihood values for each cluster.
+
+        E_step(loglik_detached):
+            Performs the Expectation (E) step of the EM algorithm.
+            Args:
+                loglik_detached (torch.Tensor): Detached log-likelihood tensor.
+            Returns:
+                bool: Whether any clusters were removed.
+
+        M_step(X, Y, W):
+            Performs the Maximization (M) step of the EM algorithm.
+            Args:
+                X (torch.Tensor): Covariates.
+                Y (torch.Tensor): Response variable.
+                W (torch.Tensor): Posterior probabilities.
+            Returns:
+                torch.Tensor: Loss value.
+
+        fit(X, Y, num_epochs, num_inner_steps, lr, tol, regularization, plot):
+            Fits the clustering model using the EM algorithm.
+            Args:
+                X (torch.Tensor): Covariates.
+                Y (torch.Tensor): Response variable.
+                num_epochs (int): Number of epochs.
+                num_inner_steps (int): Number of inner optimization steps.
+                lr (float): Learning rate.
+                tol (float): Tolerance for convergence.
+                regularization (float): Regularization strength.
+                plot (bool): Whether to plot log-likelihood over epochs.
+            Returns:
+                List[float]: Log-likelihood values over epochs.
+
+        predict(X):
+            Predicts parameters for the given input.
+            Args:
+                X (torch.Tensor): Covariates.
+            Returns:
+                torch.Tensor: Predicted mean direction and concentration.
+
+        predict_and_cluster(X, Y):
+            Predicts cluster assignments and returns cluster details.
+            Args:
+                X (torch.Tensor): Covariates.
+                Y (torch.Tensor): Response variable.
+            Returns:
+                Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Posterior probabilities, mean direction, and concentration.
+    """
+
     def __init__(self, num_covariates, response_dim, num_clusters, distribution = "pkbd", min_weight=0.05, device='cpu'):
         super(SphericalClustering, self).__init__()
         self.num_covariates = num_covariates
@@ -165,20 +304,19 @@ class SphericalClustering(nn.Module):
 
         return loss
     
-    def _preproc(self, X, Y, N, K, optimizer):
-        W = torch.zeros(N, K)
-        W.fill_(0.1/(K-1))
-        W[:,0] = 0.9 
-        perm = torch.stack([torch.randperm(K) for _ in range(N)])
-        self.W = torch.gather(W, 1, perm).to(self.device)
-        W_colnorm = self.W / (torch.sum(self.W, dim=0, keepdim=True))
-        for _ in range(20):
-            optimizer.zero_grad()  # Reset gradients
-            loss = self.M_step(X, Y, W_colnorm)
-            loss.backward()
-            optimizer.step()
 
-    def fit_no_covariates(self, Y, num_epochs=100, tol = 1e-4):
+    def fit_no_covariates(self, Y, num_epochs=100, tol = 1e-8):
+        """
+        Fits the model when there are no covariates using the EM algorithm implemented in C++.
+
+        Args:
+            Y (torch.Tensor or numpy.ndarray): Response variable.
+            num_epochs (int): Maximum number of EM iterations.
+            tol (float): Convergence tolerance.
+
+        Returns:
+            Tuple[numpy.ndarray, numpy.ndarray]: Estimated mean directions (mu) and concentrations (rho).
+        """
         # turn Y into numpy
         if isinstance(Y, torch.Tensor):
             Y = Y.cpu().numpy()
@@ -193,6 +331,20 @@ class SphericalClustering(nn.Module):
         with torch.no_grad():
             self.A.weight.copy_(torch.tensor(mat, dtype=torch.float32).to(self.device))
         return mu, rho    
+    
+
+    def _preproc(self, X, Y, N, K, optimizer):
+        W = torch.zeros(N, K)
+        W.fill_(0.1/(K-1))
+        W[:,0] = 0.9 
+        perm = torch.stack([torch.randperm(K) for _ in range(N)])
+        self.W = torch.gather(W, 1, perm).to(self.device)
+        W_colnorm = self.W / (torch.sum(self.W, dim=0, keepdim=True))
+        for _ in range(20):
+            optimizer.zero_grad()  # Reset gradients
+            loss = self.M_step(X, Y, W_colnorm)
+            loss.backward()
+            optimizer.step()
     
     def fit(self, X, Y, num_epochs=100, num_inner_steps=10, lr = 1e-3, tol = 1e-4, reguralisation = 0, plot = True):
         # Fit the model using EM algorithm
@@ -412,7 +564,11 @@ class SphericalClustering(nn.Module):
             plt.title('Log-likelihood over epochs')
         return Loglikelihoods
     
-    def predict(self, X):
+    def predict(self, X = None):
+        if X is None:
+            X = torch.ones(1, self.num_covariates)
+        else: 
+            X = torch.tensor(X, dtype=torch.float32)
         # Predict the cluster assignments
         self.eval()
         with torch.inference_mode():
@@ -420,6 +576,8 @@ class SphericalClustering(nn.Module):
             return self(X)
 
     def predict_and_cluster(self, X, Y):
+        X = torch.tensor(X, dtype=torch.float32)
+        Y = torch.tensor(Y, dtype=torch.float32)
         # Predict the cluster assignments and return the cluster assignments
         self.eval()
         with torch.inference_mode():
