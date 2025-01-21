@@ -21,6 +21,9 @@ class spcauchy:
     
     @staticmethod
     def log_likelihood(data, mu, rho):
+        if isinstance(data, torch.Tensor):
+            data = data.cpu().numpy()
+        data = np.ascontiguousarray(data, dtype=np.float64)    
         """Wrapper for logLik_sCauchy C++ function"""
         return loglik_spcauchy(data, mu, rho)
     
@@ -34,6 +37,9 @@ class PKBD:
     
     @staticmethod
     def log_likelihood(data, mu, rho):
+        if isinstance(data, torch.Tensor):
+            data = data.cpu().numpy()
+        data = np.ascontiguousarray(data, dtype=np.float64)    
         """Wrapper for logLik_PKBD C++ function"""
         return loglik_pkbd(data, mu, rho)
     
@@ -175,7 +181,8 @@ class SphericalClustering(nn.Module):
     def fit_no_covariates(self, Y, num_epochs=100, tol = 1e-4):
         # turn Y into numpy
         if isinstance(Y, torch.Tensor):
-            Y = np.ascontiguousarray(Y.cpu().numpy(), dtype=np.float64)
+            Y = Y.cpu().numpy()
+        Y = np.ascontiguousarray(Y, dtype=np.float64)    
         results = EM(Y, self.num_clusters, "softmax", self.distribution, self.min_weight, num_epochs, tol)
         self.W = torch.tensor(results[0])
         self.pi = torch.tensor(results[3])
@@ -194,10 +201,7 @@ class SphericalClustering(nn.Module):
         #only intercept which are all equal
         if X is None or (X.size(1) == 1 and torch.all(X[:,0] == X[0,0])): 
             _, _ = self.fit_no_covariates(Y, num_epochs, tol)
-            return None
-            
-
-            
+            return None            
 
         X = X.to(self.device)
         Y = Y.to(self.device)

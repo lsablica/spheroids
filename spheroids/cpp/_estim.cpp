@@ -303,7 +303,6 @@ py::tuple EM(const py::array_t<double> &data_arr, int K, std::string E_type, std
     M_step(/*c-r*/data,/*c-r*/beta_matrix,/*r*/mu_matrix,/*r*/rho_vec, reltol, maxiter);
     i += 1;
   } 
-  std::cout << mu_matrix << std::endl;
   py::tuple result = py::make_tuple(arma_mat_to_pyarray(beta_matrix), arma_vec_to_pyarray(rho_vec), arma_mat_to_pyarray(mu_matrix), arma_vec_to_pyarray(pi_vector.t()), log_lik, i);
   return  result;
 } 
