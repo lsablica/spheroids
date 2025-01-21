@@ -92,6 +92,12 @@ jobs:
         with:
           name: spheroids-${{ env.PACKAGE_VERSION }}-${{ matrix.os }}-wheels
           path: wheelhouse/*.whl
+      
+      # Move the wheels to the `dist/` directory for PyPI publishing
+      - name: Prepare wheels for publishing
+        run: |
+          mkdir -p dist
+          cp wheelhouse/*.whl dist/    
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
