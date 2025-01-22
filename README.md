@@ -6,7 +6,7 @@
   [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
   [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
   [![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?&logo=PyTorch&logoColor=white)](https://pytorch.org/)
-  [![GitHub Issues](https://img.shields.io/github/issues/lsablica/spheroids.svg)](https://github.com/lsablica/spheroids2/issues)
+  [![GitHub Issues](https://img.shields.io/github/issues/lsablica/spheroids.svg)](https://github.com/lsablica/spheroids/issues)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
   *High-performance spherical clustering with PyTorch and C++*
@@ -20,6 +20,15 @@
 </div>
 
 ---
+
+Spheroids offers the use of [PKBD](https://www.tandfonline.com/doi/full/10.1080/10618600.2020.1740713) and [spherical Cauchy distributions](https://projecteuclid.org/journals/bernoulli/volume-26/issue-4/Some-properties-of-a-Cauchy-family-on-the-sphere-derived/10.3150/20-BEJ1222.full), which—unlike many other spherical distributions—avoid complicated normalizing constants involving hypergeometric functions and hence do not require iterative evaluations. Instead, they primarily rely on matrix multiplication, making them well-suited for GPU-accelerated computing. 
+
+The package provides **two EM-based estimation methods**:
+- A **direct approach** (C++ backend) when no covariates are available  
+- A **deep learning approach** (PyTorch backend) for model-based clustering in an embedding space with covariates  
+
+Furthermore, Spheroids includes options to **regularize the number of clusters** using an L1 norm (via a Hadamard product approach inspired by [Ziyin and Wang](https://proceedings.mlr.press/v202/ziyin23a.html)) and can **dynamically drop clusters** whose total weight falls below a user-specified threshold (`min_weight`).
+
 
 ## Key Features  
 
