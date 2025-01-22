@@ -14,7 +14,7 @@
   [Key Features](#key-features) •
   [Installation](#installation) •
   [Quick Start](#quick-start) •
-  [Documentation](#documentation) •
+  [Documentation](#api-reference) •
   [Contributing](#contributing)
 
 </div>
