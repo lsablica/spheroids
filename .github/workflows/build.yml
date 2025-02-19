@@ -37,7 +37,7 @@ jobs:
         run: |
           brew update
           brew install armadillo libomp
-          # In case you need env vars so the compiler finds libomp, set them:
+          
           export CXXFLAGS="-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/armadillo/include"
           export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -lomp -L/opt/homebrew/opt/armadillo/lib"
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
@@ -70,15 +70,12 @@ jobs:
         run: |
           case "${{ matrix.os }}" in
             "ubuntu-latest")
-              # Linux: Install Armadillo inside the manylinux container
               export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel"
               ;;
             "macOS-latest")
-              # macOS: Set deployment target to match Homebrew libraries
-              export MACOSX_DEPLOYMENT_TARGET=14.0
+              export MACOSX_DEPLOYMENT_TARGET=13.0
               ;;
             "windows-latest")
-              echo "Windows build steps go here"
               set CXXFLAGS=/std:c++17 /openmp /I"C:\vcpkg\installed\x64-windows\include"
               set LDFLAGS=/LIBPATH:"C:\vcpkg\installed\x64-windows\lib"
               ;;
