@@ -41,6 +41,7 @@ jobs:
           export CXXFLAGS="-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/armadillo/include"
           export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -lomp -L/opt/homebrew/opt/armadillo/lib"
           python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
+          export CIBW_ARCHS="universal2" 
           
       # ---------- WINDOWS DEPENDENCIES ----------
       - name: Install build dependencies (Windows)

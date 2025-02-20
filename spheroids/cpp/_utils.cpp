@@ -11,7 +11,7 @@ py::array_t<double> rpkbd(int n, double rho, const py::array_t<double> &mu_arr){
   arma::vec mu = pyarray_to_arma_vec(mu_arr);
 
   double lambda = 2*rho/(1+rho*rho);
-  double norm = as_scalar(sum(arma::pow(mu,2)));
+  double norm = arma::as_scalar(sum(arma::pow(mu,2)));
   int p = mu.n_elem;
   arma::mat A(n, p);
   if(lambda == 0 || norm == 0){/*uniform*/
