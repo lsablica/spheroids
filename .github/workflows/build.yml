@@ -74,7 +74,7 @@ jobs:
               export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel"
               ;;
             "macOS-latest")
-              export MACOSX_DEPLOYMENT_TARGET=13.0
+              export MACOSX_DEPLOYMENT_TARGET=14.0
               ;;
             "windows-latest")
               set CXXFLAGS=/std:c++17 /openmp /I"C:\vcpkg\installed\x64-windows\include"
