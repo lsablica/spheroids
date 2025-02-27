@@ -31,9 +31,38 @@ inline arma::mat pyarray_to_arma_mat(const py::array_t<double> &arr) {
     return M.t(); // Now M is n x d, matching the Python layout
 }
 
+// Convert a Python array to an arma::vec with copy
+inline arma::vec pyarray_to_arma_vec_copy(const py::array_t<double> &arr) {
+    py::buffer_info buf = arr.request();
+    if (buf.ndim == 1) {
+        return arma::vec(static_cast<double*>(buf.ptr), buf.shape[0], true); // true = copy data
+    } else if (buf.ndim == 2) {
+        size_t length = (size_t)(buf.shape[0] * buf.shape[1]);
+        return arma::vec(static_cast<double*>(buf.ptr), length, true); // true = copy data
+    } else {
+        throw std::runtime_error("Expected a 1D or 2D vector.");
+    }
+}
+
+// Convert a Python array to an arma::mat with copy
+inline arma::mat pyarray_to_arma_mat_copy(const py::array_t<double> &arr) {
+    py::buffer_info buf = arr.request();
+    // Create a temporary matrix with the Python data
+    arma::mat temp(static_cast<double*>(buf.ptr), buf.shape[1], buf.shape[0], false, false);
+    // Return a copy of the transposed matrix
+    return arma::mat(temp.t()); // true copy of data in row-major format
+}
 
 // Convert an arma::vec to a Python array
 inline py::array_t<double> arma_vec_to_pyarray(const arma::vec &v) {
+    py::array_t<double> result(v.n_elem);
+    py::buffer_info buf = result.request();
+    std::memcpy(buf.ptr, v.memptr(), v.n_elem * sizeof(double));
+    return result;
+}
+
+// Convert an arma::vec to a Python array with copy
+inline py::array_t<double> arma_vec_to_pyarray_copy(const arma::vec &v) {
     py::array_t<double> result(v.n_elem);
     py::buffer_info buf = result.request();
     std::memcpy(buf.ptr, v.memptr(), v.n_elem * sizeof(double));

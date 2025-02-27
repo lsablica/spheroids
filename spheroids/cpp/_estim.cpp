@@ -254,7 +254,8 @@ bool E_step(const arma::mat &data, arma::mat &beta_matrix, arma::vec &rho_vec, a
 } 
 
 
-py::tuple EM(const py::array_t<double> &data_arr, int K, std::string E_type, std::string M_type,  double minalpha, int maxiter, double reltol){
+py::tuple EM(const py::array_t<double> &data_arr, int K, std::string E_type, std::string M_type, double minalpha, int maxiter, double reltol){
+// This line could be problematic on macOS with different memory alignment requirements
   arma::mat data = arma::normalise(pyarray_to_arma_mat(data_arr), 2, 1); // Normalize in case
   double p = data.n_cols;
   int n = data.n_rows;
