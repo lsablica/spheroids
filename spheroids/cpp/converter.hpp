@@ -26,9 +26,8 @@ inline arma::vec pyarray_to_arma_vec(const py::array_t<double> &arr) {
 // Convert a Python array to an arma::mat
 inline arma::mat pyarray_to_arma_mat(const py::array_t<double> &arr) {
     py::buffer_info buf = arr.request();
-    // Interpret the data as (d x n) column-major, then transpose
     arma::mat M((double*)buf.ptr, buf.shape[1], buf.shape[0], false, false);
-    return M.t(); // Now M is n x d, matching the Python layout
+    return M.t(); 
 }
 
 // Convert a Python array to an arma::vec with copy
@@ -47,10 +46,8 @@ inline arma::vec pyarray_to_arma_vec_copy(const py::array_t<double> &arr) {
 // Convert a Python array to an arma::mat with copy
 inline arma::mat pyarray_to_arma_mat_copy(const py::array_t<double> &arr) {
     py::buffer_info buf = arr.request();
-    // Create a temporary matrix with the Python data
     arma::mat temp(static_cast<double*>(buf.ptr), buf.shape[1], buf.shape[0], false, false);
-    // Return a copy of the transposed matrix
-    return arma::mat(temp.t()); // true copy of data in row-major format
+    return arma::mat(temp.t()); 
 }
 
 // Convert an arma::vec to a Python array
