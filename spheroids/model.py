@@ -23,12 +23,12 @@ class HadamardRepara(torch.nn.Module):
                 torch.Tensor: Reparametrized tensor.
     """
     def __init__(self, num_clusters, response_dim, device):
-    super().__init__()
-    self.p = torch.nn.Parameter(torch.ones(num_clusters, 1)).to(device)
-    self.response_dim = response_dim
+        super().__init__()
+        self.p = torch.nn.Parameter(torch.ones(num_clusters, 1)).to(device)
+        self.response_dim = response_dim
 
     def forward(self, x):
-    return x * self.p.repeat_interleave(self.response_dim, dim=0)
+        return x * self.p.repeat_interleave(self.response_dim, dim=0)
 
 
 
