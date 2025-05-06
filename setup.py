@@ -65,7 +65,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 # Define the setup configuration
 setup(
     name="spheroids",
-    version="0.3.0",
+    version="0.4.0",
     author="Lukas Sablica",
     author_email="lsablica@wu.ac.at",
     description="A package for spherical clustering and probabilistic modeling",
