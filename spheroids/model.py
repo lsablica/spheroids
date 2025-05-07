@@ -318,6 +318,9 @@ class SphericalClustering(nn.Module):
             Tuple[numpy.ndarray, numpy.ndarray]: Estimated mean directions (mu) and concentrations (rho).
         """
         # turn Y into numpy
+        if self.num_covariates > 1:
+            raise ValueError("Model must be fitted with covariates because num_covariates > 1")
+
         if isinstance(Y, torch.Tensor):
             Y = Y.cpu().numpy()
         Y = np.ascontiguousarray(Y, dtype=np.float64)    
@@ -328,6 +331,14 @@ class SphericalClustering(nn.Module):
         mu, rho = results[2], results[1]
         mat = mu * np.transpose(rho/(1-rho))
         mat = np.transpose(mat).reshape(-1,1)
+        complement = np.zeros((self.num_clusters*self.response_dim - mat.shape[0], 1))
+        mat = np.concatenate((mat, complement), axis=0)
+
+        #update mask by setting the last clusters to False
+        new_K = mat.shape[0]/self.response_dim
+        self.mask[0, int(new_K):] = False
+        self.mask_dynamic = self.mask
+
         with torch.no_grad():
             self.A.weight.copy_(torch.tensor(mat, dtype=torch.float32).to(self.device))
         return mu, rho    
