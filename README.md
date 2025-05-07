@@ -136,6 +136,7 @@ Y = Y / torch.norm(Y, dim=1, keepdim=True)
 
 # Create and fit model
 model = SphericalClustering(
+    num_covariates=3,
     response_dim=2,
     num_clusters=3,
     distribution="pkbd"
@@ -205,7 +206,8 @@ from spheroids import SphericalClustering
 Y = np.load('spheroids/spheroids/datasets/pkbd_Y.npy')
 
 # Create model
-model = SphericalClustering(response_dim= 4, 
+model = SphericalClustering(num_covariates= 1, 
+                            response_dim= 4, 
                             num_clusters=3, 
                             device="cpu", 
                             min_weight=0.02, 
