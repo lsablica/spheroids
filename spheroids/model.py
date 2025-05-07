@@ -113,7 +113,6 @@ class SphericalClustering(nn.Module):
     A PyTorch module for spherical clustering using Spherical Cauchy or PKBD distributions.
 
     Parameters:
-        num_covariates (int): Number of covariates.
         response_dim (int): Dimensionality of the response variable.
         num_clusters (int): Number of clusters.
         distribution (str): Distribution type ('spcauchy' or 'pkbd').
@@ -190,9 +189,9 @@ class SphericalClustering(nn.Module):
                 Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Posterior probabilities, mean direction, and concentration.
     """
 
-    def __init__(self, num_covariates, response_dim, num_clusters, distribution = "pkbd", min_weight=0.05, device='cpu'):
+    def __init__(self, response_dim, num_clusters, distribution = "pkbd", min_weight=0.05, device='cpu'):
         super(SphericalClustering, self).__init__()
-        self.num_covariates = num_covariates
+        self.num_covariates = 0
         self.response_dim = response_dim
         self.num_clusters = num_clusters
         self.min_weight = torch.tensor(min_weight)
@@ -200,8 +199,8 @@ class SphericalClustering(nn.Module):
         self.device = device
 
         # Linear layer to map covariates X to K cluster embeddings (Cx(d*K))
-        self.A = nn.Linear(num_covariates, response_dim * num_clusters, bias=False)
-
+        self.A = None
+        
         # Preallocate Pi as the log of uniform probabilities (no need for .to(device))
         self.pi = torch.log(torch.ones(1, num_clusters) / num_clusters).to(device)  # Uniform Pi in log space
         # Preallocate W matrix (no need for .to(device))
@@ -222,7 +221,7 @@ class SphericalClustering(nn.Module):
     
     def __repr__(self):
         # Custom string representation
-        details = f"Mixture of {self.distribution} Distributional Regressions with {self.active_components} components and {self.num_covariates} covariates.\n"
+        details = f"Mixture of {self.distribution} Distributional Regressions with {self.active_components} components.\n"
         details += f"Log-likelihood: {self.loglik}\n"
         details += super().__repr__()  # Include the nn.Module details
         return details
@@ -318,6 +317,8 @@ class SphericalClustering(nn.Module):
             Tuple[numpy.ndarray, numpy.ndarray]: Estimated mean directions (mu) and concentrations (rho).
         """
         # turn Y into numpy
+        self.num_covariates = 1
+
         if isinstance(Y, torch.Tensor):
             Y = Y.cpu().numpy()
         Y = np.ascontiguousarray(Y, dtype=np.float64)    
@@ -328,6 +329,10 @@ class SphericalClustering(nn.Module):
         mu, rho = results[2], results[1]
         mat = mu * np.transpose(rho/(1-rho))
         mat = np.transpose(mat).reshape(-1,1)
+        self.A = nn.Linear(1, mat.shape[0] , bias=False).to(self.device)
+        self.num_clusters = mat.shape[0]/self.response_dim
+        self.mask = torch.ones(1, self.num_clusters, dtype=torch.bool).to(self.device)
+        self.mask_dynamic = torch.ones(1, self.num_clusters, dtype=torch.bool).to(self.device)
         with torch.no_grad():
             self.A.weight.copy_(torch.tensor(mat, dtype=torch.float32).to(self.device))
         return mu, rho    
@@ -354,6 +359,9 @@ class SphericalClustering(nn.Module):
         if X is None or (X.size(1) == 1 and torch.all(X[:,0] == X[0,0])): 
             _, _ = self.fit_no_covariates(Y, num_epochs, tol)
             return None            
+        
+        self.num_covariates = X.size(1)
+        self.A = nn.Linear(self.num_covariates, self.num_clusters * self.response_dim, bias=False).to(self.device)
 
         X = X.to(self.device)
         Y = Y.to(self.device)
@@ -484,6 +492,9 @@ class SphericalClustering(nn.Module):
         models_loglik_old = -1e10
         defined_batch_size = dataloader.batch_size
         Loglikelihoods = []
+
+        self.num_covariates = X.size(1)
+        self.A = nn.Linear(self.num_covariates, self.num_clusters * self.response_dim, bias=False).to(self.device)
 
         self.train()
         self._preproc_dataloader(dataloader, self.active_components, optimizer)
