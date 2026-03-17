@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "pybind11", "cibuildwheel"]
+requires = ["setuptools>=69", "wheel", "pybind11>=2.11"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -14,14 +14,7 @@ license = {file = "LICENSE"}
 requires-python = ">=3.8"
 
 dependencies = [
-    "pybind11",
     "numpy",
     "torch",
     "matplotlib"
 ]
-
-
-[tool.cibuildwheel.windows]
-environment = {CIBW_ENVIRONMENT = "CXXFLAGS='/std:c++17 /openmp'"}
-
-

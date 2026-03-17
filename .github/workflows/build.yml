@@ -34,11 +34,11 @@ jobs:
           - name: macos-x86_64
             os: macos-15-intel
             mac_arch: x86_64
-            mac_target: "11.0"
+            mac_target: "13.0"
           - name: macos-arm64
-            os: macos-15
+            os: macos-14
             mac_arch: arm64
-            mac_target: "11.0"
+            mac_target: "13.0"
 
     steps:
       - name: Check out repo
@@ -57,11 +57,12 @@ jobs:
       - name: Install cibuildwheel
         run: python -m pip install --upgrade pip "cibuildwheel==3.4.0"
 
-      - name: macOS deps (Homebrew)
+      - name: macOS build deps
         if: startsWith(matrix.os, 'macos')
         run: |
           brew update
-          brew install armadillo libomp
+          brew install armadillo
+          echo "ARMADILLO_INCLUDE_DIR=$(brew --prefix armadillo)/include" >> $GITHUB_ENV
 
       - name: Windows deps (vcpkg)
         if: startsWith(matrix.os, 'windows')
@@ -77,17 +78,17 @@ jobs:
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp* *musllinux* *i686* *win32*"
 
-          # Use uv-backed environment creation to avoid virtualenv.pyz bootstrap on macOS
+          # avoid the virtualenv.pyz download path
           CIBW_BUILD_FRONTEND: "build[uv]"
 
           # Linux system deps inside manylinux container
           CIBW_BEFORE_ALL_LINUX: "yum install -y armadillo-devel"
 
-          # Native mac wheels
+          # macOS wheel tags / minimum supported macOS
           CIBW_ARCHS_MACOS: ${{ matrix.mac_arch }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.mac_target }}
 
-          # Smoke test
+          # smoke test
           CIBW_TEST_COMMAND: "python -c \"import spheroids; print('import ok')\""
         run: python -m cibuildwheel --output-dir wheelhouse
 
