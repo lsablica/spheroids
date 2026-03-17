@@ -1,8 +1,22 @@
 name: Build wheels
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+    paths:
+      - "setup.py"
+      - "pyproject.toml"
+      - "README.md"
+      - "spheroids/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "setup.py"
+      - "pyproject.toml"
+      - "README.md"
+      - "spheroids/**"
+      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 jobs:
@@ -18,11 +32,11 @@ jobs:
           - name: windows
             os: windows-latest
           - name: macos-x86_64
-            os: macos-13
+            os: macos-15-intel
             mac_arch: x86_64
             mac_target: "11.0"
           - name: macos-arm64
-            os: macos-14
+            os: macos-15
             mac_arch: arm64
             mac_target: "11.0"
 
@@ -36,7 +50,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install cibuildwheel
-        run: python -m pip install --upgrade pip "cibuildwheel==2.21.0"
+        run: python -m pip install --upgrade pip "cibuildwheel==2.23.3"
 
       - name: macOS deps (Homebrew)
         if: startsWith(matrix.os, 'macos')
@@ -55,43 +69,22 @@ jobs:
 
       - name: Build wheels
         env:
-          # choose your support window; matches what you currently publish on PyPI
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp* *musllinux* *i686* *win32*"
-
-          # Linux: runs inside manylinux container
-          CIBW_BEFORE_BUILD_LINUX: "yum install -y armadillo-devel"
-
-          # macOS split by runner
+          CIBW_BEFORE_ALL_LINUX: "yum install -y armadillo-devel"
           CIBW_ARCHS_MACOS: ${{ matrix.mac_arch }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.mac_target }}
-
-          # sanity test (keep it simple)
-          CIBW_TEST_COMMAND: >
-            python -c "import spheroids; print('import ok')"
+          CIBW_TEST_COMMAND: "python -c \"import spheroids; print('import ok')\""
         run: |
           python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Show built wheels
+        shell: bash
+        run: ls -lah wheelhouse
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.name }}
           path: wheelhouse/*.whl
-
-  publish:
-    name: Publish to PyPI
-    needs: build_wheels
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    steps:
-      - name: Download all wheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: wheels-*
-          merge-multiple: true
-          path: dist
-
-      - name: Publish
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          retention-days: 14
