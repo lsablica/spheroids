@@ -49,8 +49,13 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
       - name: Install cibuildwheel
-        run: python -m pip install --upgrade pip "cibuildwheel==2.23.3"
+        run: python -m pip install --upgrade pip "cibuildwheel==3.4.0"
 
       - name: macOS deps (Homebrew)
         if: startsWith(matrix.os, 'macos')
@@ -71,12 +76,20 @@ jobs:
         env:
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp* *musllinux* *i686* *win32*"
+
+          # Use uv-backed environment creation to avoid virtualenv.pyz bootstrap on macOS
+          CIBW_BUILD_FRONTEND: "build[uv]"
+
+          # Linux system deps inside manylinux container
           CIBW_BEFORE_ALL_LINUX: "yum install -y armadillo-devel"
+
+          # Native mac wheels
           CIBW_ARCHS_MACOS: ${{ matrix.mac_arch }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.mac_target }}
+
+          # Smoke test
           CIBW_TEST_COMMAND: "python -c \"import spheroids; print('import ok')\""
-        run: |
-          python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir wheelhouse
 
       - name: Show built wheels
         shell: bash
