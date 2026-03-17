@@ -19,17 +19,23 @@ if system == "Windows":
     ]
     libraries += ["openblas", "lapack"]
 elif system == "Darwin":
-    # macOS needs -Xpreprocessor -fopenmp, plus link against -lomp
+    import subprocess
+
+    def brew_prefix(pkg):
+        return subprocess.check_output(["brew", "--prefix", pkg], text=True).strip()
+
+    libomp = brew_prefix("libomp")
+    arma = brew_prefix("armadillo")
+
     extra_compile_args += [
-        "-Xpreprocessor", 
-        "-fopenmp", 
-        "-I/opt/homebrew/opt/libomp/include",
-        "-I/opt/homebrew/opt/armadillo/include"
+        "-Xpreprocessor", "-fopenmp",
+        f"-I{libomp}/include",
+        f"-I{arma}/include",
     ]
     extra_link_args += [
         "-lomp",
-        "-L/opt/homebrew/opt/libomp/lib",
-        "-L/opt/homebrew/opt/armadillo/lib"
+        f"-L{libomp}/lib",
+        f"-L{arma}/lib",
     ]
 else:
     # Linux

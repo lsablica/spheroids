@@ -1,131 +1,97 @@
 name: Build wheels
 
 on:
-  # Trigger on new releases only
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   build_wheels:
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-        python-version: ["3.11"]
+        include:
+          - name: linux
+            os: ubuntu-latest
+          - name: windows
+            os: windows-latest
+          - name: macos-x86_64
+            os: macos-13
+            mac_arch: x86_64
+            mac_target: "11.0"
+          - name: macos-arm64
+            os: macos-14
+            mac_arch: arm64
+            mac_target: "11.0"
+
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Python (runner only)
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
 
-      - name: Install build dependencies (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          # Armadillo and OpenMP
-          sudo apt-get install -y libarmadillo-dev libomp-dev
-          # Also make sure we have an updated pip/setuptools/wheel
-          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
-          # auditwheel (for manylinux repair)
-          python -m pip install auditwheel
+      - name: Install cibuildwheel
+        run: python -m pip install --upgrade pip "cibuildwheel==2.21.0"
 
-      - name: Install build dependencies (macOS)
-        if: matrix.os == 'macOS-latest'
+      - name: macOS deps (Homebrew)
+        if: startsWith(matrix.os, 'macos')
         run: |
           brew update
           brew install armadillo libomp
-          
-          export CXXFLAGS="-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/opt/armadillo/include"
-          export LDFLAGS="-L/opt/homebrew/opt/libomp/lib -lomp -L/opt/homebrew/opt/armadillo/lib"
-          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
-          export CIBW_ARCHS="universal2" 
-          
-      # ---------- WINDOWS DEPENDENCIES ----------
-      - name: Install build dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          # 1) Clone vcpkg into C:\vcpkg
-          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
 
-          # 2) Build vcpkg.exe
+      - name: Windows deps (vcpkg)
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
           cd C:\vcpkg
           .\bootstrap-vcpkg.bat -disableMetrics
-
-          # 3) Install Armadillo (and any other libs) via vcpkg
           .\vcpkg.exe install armadillo
 
-          # Upgrade pip + install cibuildwheel
-          python -m pip install --upgrade pip setuptools wheel cibuildwheel pybind11
-          
-      - name: Get package version
-        id: get-version
-        shell: bash
+      - name: Build wheels
+        env:
+          # choose your support window; matches what you currently publish on PyPI
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "pp* *musllinux* *i686* *win32*"
+
+          # Linux: runs inside manylinux container
+          CIBW_BEFORE_BUILD_LINUX: "yum install -y armadillo-devel"
+
+          # macOS split by runner
+          CIBW_ARCHS_MACOS: ${{ matrix.mac_arch }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.mac_target }}
+
+          # sanity test (keep it simple)
+          CIBW_TEST_COMMAND: >
+            python -c "import spheroids; print('import ok')"
         run: |
-          echo "PACKAGE_VERSION=$(python setup.py --version)" >> $GITHUB_ENV    
- 
-      - name: Build wheels with cibuildwheel
-        shell: bash
-        run: |
-          case "${{ matrix.os }}" in
-            "ubuntu-latest")
-              export CIBW_BEFORE_BUILD_LINUX="yum install -y armadillo-devel"
-              ;;
-            "macOS-latest")
-              export MACOSX_DEPLOYMENT_TARGET=14.0
-              ;;
-            "windows-latest")
-              set CXXFLAGS=/std:c++17 /openmp /I"C:\vcpkg\installed\x64-windows\include"
-              set LDFLAGS=/LIBPATH:"C:\vcpkg\installed\x64-windows\lib"
-              ;;
-          esac
-          
-          export CIBW_SKIP="pp* *i686* *musllinux* *win32*"
-          cibuildwheel --output-dir wheelhouse
-          
-      - name: Upload wheel artifacts
+          python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
+          name: wheels-${{ matrix.name }}
           path: wheelhouse/*.whl
-      
 
-
-      # Test built wheels
-    #- name: Test built wheels
-    #   run: |
-    #     python -m pip install wheelhouse/*.whl 
-    #     python -c "import spheroids; print('Package imported successfully!')"
-  publish_wheels:
-    runs-on: ubuntu-latest
+  publish:
+    name: Publish to PyPI
     needs: build_wheels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
     steps:
-      - name: Check out repo
-        uses: actions/checkout@v3
-
-      - name: Download wheel artifacts (Linux)
+      - name: Download all wheel artifacts
         uses: actions/download-artifact@v4
         with:
-          name: wheels-ubuntu-latest
-          path: dist/
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
 
-      - name: Download wheel artifacts (macOS)
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-macOS-latest
-          path: dist/
-
-      - name: Download wheel artifacts (Windows)
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-windows-latest
-          path: dist/
-
-      - name: Publish to PyPI
+      - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-        env:
-          TWINE_USERNAME: "__token__"
