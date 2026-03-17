@@ -1,24 +1,8 @@
-name: Build wheels
+name: Publish wheels to PyPI
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "setup.py"
-      - "pyproject.toml"
-      - "README.md"
-      - "spheroids/**"
-      - ".github/workflows/build.yml"
-      - ".github/workflows/publish.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "setup.py"
-      - "pyproject.toml"
-      - "README.md"
-      - "spheroids/**"
-      - ".github/workflows/build.yml"
-      - ".github/workflows/publish.yml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -102,3 +86,22 @@ jobs:
           name: wheels-${{ matrix.name }}
           path: wheelhouse/*.whl
           retention-days: 14
+
+  publish:
+    name: Publish to PyPI
+    needs: build_wheels
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
